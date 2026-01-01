@@ -23,34 +23,34 @@ async def interactive_mode():
     
     while True:
         try:
-            user_input = input("\n🚀 Project Idea (or command): ").strip()
+            user_input = input("\nProject Idea (or command): ").strip()
             
             if not user_input:
                 continue
             
             if user_input.lower() == 'q':
-                print("\n👋 Goodbye!\n")
+                print("\nGoodbye!\n")
                 break
             
             if user_input.lower() == 'trace':
                 if logger.logs:
                     logger.export_trace()
                 else:
-                    print("⚠️  No trace data available. Generate an SRS first.")
+                    print("No trace data available. Generate an SRS first.")
                 continue
             
             if user_input.lower().startswith('save'):
                 if current_srs and current_project:
-                    print("\n💾 Saving SRS document...")
-                    export_to_markdown(current_srs, current_project)
+                    print("\nSaving SRS document...")
+                    export_to_markdown(current_srs)
                     logger.export_trace(f"trace_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
                 else:
-                    print("⚠️  No SRS document to save. Generate one first.")
+                    print("No SRS document to save. Generate one first.")
                 continue
             
             # Generate SRS
             current_project = user_input
-            print(f"\n🔄 Generating SRS for: {user_input}\n")
+            print(f"\nGenerating SRS for: {user_input}\n")
             
             current_srs = await generate_srs(user_input)
             
@@ -59,13 +59,13 @@ async def interactive_mode():
             print("="*80 + "\n")
             print(current_srs)
             print("\n" + "="*80)
-            print("\n💡 Type 'save' to export as markdown, or 'trace' for execution log")
+            print("\nType 'save' to export as markdown, or 'trace' for execution log")
             
         except KeyboardInterrupt:
-            print("\n\n👋 Interrupted. Goodbye!\n")
+            print("\n\nInterrupted. Goodbye!\n")
             break
         except Exception as e:
-            print(f"\n❌ Error: {str(e)}\n")
+            print(f"\nError: {str(e)}\n")
             logger.log("SYSTEM_ERROR", str(e), level="ERROR")
 
 # ============================================================================

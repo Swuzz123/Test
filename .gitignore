@@ -18,3 +18,4 @@ outputs/
 *.json
 
 trace.md
+/docs

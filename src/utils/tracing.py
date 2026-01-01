@@ -68,7 +68,7 @@ class AgentLogger:
           "start_time": datetime.fromtimestamp(self.start_time).isoformat(),
           "total_duration": round(time.time() - self.start_time, 2)
         },
-        "logs": self.logsa
+        "logs": self.logs
       }, f, indent=2, ensure_ascii=False)
     
     print(f"\nTrace log exported to: {filename}")

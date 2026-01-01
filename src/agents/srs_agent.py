@@ -1,4 +1,6 @@
 import os
+import re
+import glob
 import json
 import asyncio
 from datetime import datetime
@@ -27,46 +29,46 @@ tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 # TAVILY SEARCH INTEGRATION
 # ============================================================================
 def search_with_tavily(query: str, search_depth: str = "advanced") -> str:
-    """
-    Real search using Tavily API
-    
-    Args:
-        query: Search query
-        search_depth: 'basic' or 'advanced'
-    """
-    logger.log("TOOL_CALL", f"Tavily Search: {query}", 
-              data={"search_depth": search_depth}, level="TOOL")
-    
-    try:
-        response = tavily_client.search(
-            query=query,
-            search_depth=search_depth,
-            max_results=5
-        )
-        
-        # Extract relevant information
-        results = []
-        for result in response.get('results', []):
-            results.append({
-                "title": result.get('title', ''),
-                "url": result.get('url', ''),
-                "content": result.get('content', '')[:500]  # Limit content length
-            })
-        
-        formatted_results = "\n\n".join([
-            f"**{r['title']}**\nURL: {r['url']}\n{r['content']}"
-            for r in results
-        ])
-        
-        logger.log("TOOL_RESPONSE", f"Tavily returned {len(results)} results", 
-                  data={"num_results": len(results)}, level="TOOL")
-        
-        return formatted_results if formatted_results else "No results found."
-        
-    except Exception as e:
-        logger.log("TOOL_ERROR", f"Tavily search failed: {str(e)}", 
-                  data={"error": str(e)}, level="ERROR")
-        return f"Search error: {str(e)}"
+  """
+  Real search using Tavily API
+  
+  Args:
+    query: Search query
+    search_depth: 'basic' or 'advanced'
+  """
+  logger.log("TOOL_CALL", f"Tavily Search: {query}", 
+            data={"search_depth": search_depth}, level="TOOL")
+  
+  try:
+      response = tavily_client.search(
+        query=query,
+        search_depth=search_depth,
+        max_results=5
+      )
+      
+      # Extract relevant information
+      results = []
+      for result in response.get('results', []):
+          results.append({
+            "title": result.get('title', ''),
+            "url": result.get('url', ''),
+            "content": result.get('content', '')[:500] 
+          })
+      
+      formatted_results = "\n\n".join([
+        f"**{r['title']}**\nURL: {r['url']}\n{r['content']}"
+        for r in results
+      ])
+      
+      logger.log("TOOL_RESPONSE", f"Tavily returned {len(results)} results", 
+                data={"num_results": len(results)}, level="TOOL")
+      
+      return formatted_results if formatted_results else "No results found."
+      
+  except Exception as e:
+    logger.log("TOOL_ERROR", f"Tavily search failed: {str(e)}", 
+              data={"error": str(e)}, level="ERROR")
+    return f"Search error: {str(e)}"
       
 # ============================================================================
 # LLM CALL WITH TOOL HANDLING
@@ -198,7 +200,7 @@ async def planner_agent(user_query: str) -> List[Dict]:
       - Gather technical recommendations
 
       STEP 2: After research, create a detailed execution plan
-      - Design 3-6 specialized agents
+      - Design 3-5 specialized agents
       - Assign specific, actionable tasks
       - Provide full context to each agent
 
@@ -298,13 +300,13 @@ async def synthesizer_agent(project_query: str, agent_results: List[Dict]) -> st
     logger.log("SYNTHESIZER_START", "Synthesizing final SRS document", level="AGENT")
     
     synthesis_input = f"""
-PROJECT: {project_query}
+      PROJECT: {project_query}
 
-AGENT OUTPUTS TO SYNTHESIZE:
-{json.dumps(agent_results, indent=2)}
+      AGENT OUTPUTS TO SYNTHESIZE:
+      {json.dumps(agent_results, indent=2)}
 
-Create a comprehensive, professional SRS document that integrates all agent outputs.
-"""
+      Create a comprehensive, professional SRS document that integrates all agent outputs.
+    """
     
     final_srs = await call_llm_with_tools(
         prompt=synthesis_input,
@@ -358,20 +360,27 @@ async def generate_srs(project_query: str) -> str:
 # ============================================================================
 # MARKDOWN EXPORT
 # ============================================================================
-def export_to_markdown(srs_content: str, project_name: str) -> str:
+def export_to_markdown(srs_content: str) -> str:
     """
-    Export SRS to markdown file with proper formatting
+    Export SRS to markdown file with auto versioning (short filename)
     """
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_project_name = "".join(c for c in project_name if c.isalnum() or c in (' ', '-', '_')).strip()
-    safe_project_name = safe_project_name.replace(' ', '_')
-    
-    filename = f"SRS_{safe_project_name}_{timestamp}.md"
-    
+    # Tìm tất cả file đã có dạng SRS_version_X.md
+    existing_files = glob.glob("SRS_version_*.md")
+
+    # Lấy số version lớn nhất hiện tại
+    max_ver = 0
+    for file in existing_files:
+        match = re.search(r"SRS_version_(\d+)\.md", file)
+        if match:
+            max_ver = max(max_ver, int(match.group(1)))
+
+    # Version tiếp theo
+    next_ver = max_ver + 1
+    filename = f"SRS_version_{next_ver}.md"
+
     # Add metadata header
     markdown_content = f"""---
       title: Software Requirements Specification
-      project: {project_name}
       generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
       generator: SRS Multi-Agent System
       ---
@@ -381,11 +390,11 @@ def export_to_markdown(srs_content: str, project_name: str) -> str:
       ---
       *Generated by SRS Multi-Agent System with AI-powered research and analysis*
     """
-    
+
     with open(filename, "w", encoding="utf-8") as f:
         f.write(markdown_content)
-    
+
     logger.log("EXPORT_SUCCESS", f"SRS exported to {filename}", level="SUCCESS")
-    print(f"\n✅ SRS Document exported to: {filename}")
-    
+    print(f"\nSRS Document exported to: {filename}")
+
     return filename
