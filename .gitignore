@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Environment
+.env
+
+# Outputs
+outputs/
+*.json
+
+trace.md
