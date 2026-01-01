@@ -3,9 +3,6 @@ import json
 from datetime import datetime
 from typing import Optional, Dict
 
-# ============================================================================
-# LOGGING & TRACING SYSTEM
-# ============================================================================
 class AgentLogger:
   """Comprehensive logging and tracing for multi-agent system"""
   

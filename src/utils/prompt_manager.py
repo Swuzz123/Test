@@ -1,4 +1,10 @@
 PLANNER_PROMPT = """
+Based on the project: 
+{project_query}
+
+Research findings:
+{research_summary}
+
 # ROLE: Elite Solutions Architect & Project Manager (Orchestrator)
 
 ## CONTEXT:
@@ -80,6 +86,7 @@ Return ONLY a JSON list in the exact structure below:
     }
   }
 ]
+```
 """
 
 WORKER_PROMPT_TEMPLATE = """
@@ -89,22 +96,19 @@ WORKER_PROMPT_TEMPLATE = """
 You are a specialized engineering agent in a multi-agent SRS system.
 
 ## YOUR TASK:
-{task_details}
+{task}
 
 ## YOUR CAPABILITIES:
-- You have access to the tavily_search tool if you need additional research
-- You can search for technical documentation, best practices, examples
 - You should produce a detailed, professional engineering specification
 
 ## OUTPUT REQUIREMENTS:
-1. **Research** (if needed): Use tavily_search for specific technical details
 2. **Design**: Create comprehensive technical specifications
 3. **Document**: Write in professional engineering style with:
-   - Clear section headers
-   - Technical depth and precision
-   - Architecture diagrams (in text/Mermaid format)
-   - Risk analysis and mitigations
-   - Implementation recommendations
+  - Clear section headers
+  - Technical depth and precision
+  - Architecture diagrams (in text/Mermaid format)
+  - Risk analysis and mitigations
+  - Implementation recommendations
 
 ## FORMAT:
 Do NOT return JSON. Return a well-structured markdown document.
@@ -114,6 +118,12 @@ Begin your work now.
 
 SYNTHESIS_PROMPT = """
 # ROLE: Lead Technical Architect & Documentation Specialist
+
+Create a comprehensive Software Requirements Specification (SRS) for:
+{project_query}
+
+Integrate these specialized reports:
+{worker_outputs}
 
 You are synthesizing multiple specialized engineering reports into ONE comprehensive SRS document.
 
