@@ -1,9 +1,9 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from src.graph.state import SRSState
+from .state import SRSState
 from src.utils.tracing import logger
-from src.agents.srs.nodes import research_node, planning_node, worker_node, synthesis_node
+from .nodes import research_node, planning_node, worker_node, synthesis_node
 
 def should_continue(state: SRSState) -> str:
   phase = state.get("current_phase", "")

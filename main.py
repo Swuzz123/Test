@@ -3,7 +3,7 @@ from datetime import datetime
 
 from src.utils.tracing import logger
 from src.utils.export_md import export_to_markdown
-from src.graph.workflow import generate_srs_langgraph
+from agents.srs.graph import generate_srs_langgraph
 
 async def interactive_mode():
   """Interactive CLI (same interface)"""

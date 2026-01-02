@@ -5,13 +5,13 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, ToolMessage
 
 from src.utils.tracing import logger
-from src.graph.state import SRSState
+from agents.srs.state import SRSState
 from src.utils.prompt_manager import (
   PLANNER_PROMPT, 
   WORKER_PROMPT_TEMPLATE, 
   SYNTHESIS_PROMPT
 )
-from src.agents.tools import tools, tavily_search
+from tools import tools, tavily_search
 
 # =============================== CONFIGURATION ================================
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -119,7 +119,7 @@ def planning_node(state: SRSState) -> SRSState:
         
     logger.log("NODE_COMPLETE", f"Planning Node - created {len(agent_plan)} agents", 
               data={"num_agents": len(agent_plan)}, level="SUCCESS")
-  except:
+  except Exception as e:
     logger.log("PLAN_PARSE_ERROR", f"Failed to parse plan: {str(e)}", level="ERROR")
     
     # Fallback plan
