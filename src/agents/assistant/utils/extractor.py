@@ -19,7 +19,7 @@ def extract_requirements(user_message: str, current_requirements: dict) -> dict:
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": EXTRACTION_SYSTEM},
                 {"role": "user", "content": prompt}

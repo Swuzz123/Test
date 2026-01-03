@@ -1,16 +1,5 @@
 from typing import Dict, List, Tuple
-
-# Category weights and minimum requirements
-CATEGORY_CONFIG = {
-  "project_type": {"weight": 0.20, "min_items": 1},
-  "core_features": {"weight": 0.25, "min_items": 3},
-  "tech_stack": {"weight": 0.15, "min_items": 2},
-  "user_roles": {"weight": 0.10, "min_items": 1},
-  "business_goals": {"weight": 0.10, "min_items": 1},
-  "non_functional": {"weight": 0.10, "min_items": 1},
-  "integrations": {"weight": 0.05, "min_items": 0}, 
-  "constraints": {"weight": 0.05, "min_items": 0} 
-}
+from agents.assistant.utils.category_config import CATEGORY_CONFIG
 
 def calculate_completeness(requirements: Dict[str, List[str]]) -> Tuple[float, List[str]]:
   """
@@ -28,14 +17,16 @@ def calculate_completeness(requirements: Dict[str, List[str]]) -> Tuple[float, L
   missing = []
   
   for category, config in CATEGORY_CONFIG.items():
+    if not config["required"]:
+      continue 
+    
     items = requirements.get(category, [])
     item_count = len(items)
-    min_items = config["min_items"]
     weight = config["weight"]
+    min_items = config["min_items"]
     
     # Calculate category score
     if min_items == 0:
-      # Optional category
       category_score = 1.0 if item_count > 0 else 0.0
     else:
       # Required category - proportional score
@@ -50,7 +41,7 @@ def calculate_completeness(requirements: Dict[str, List[str]]) -> Tuple[float, L
   
   return round(total_score, 2), missing
 
-def is_ready_for_srs(score: float, threshold: float = 0.8) -> bool:
+def is_ready_for_srs(score: float, threshold: float = 0.7) -> bool:
   """Check if score meets threshold"""
   return score >= threshold
 
@@ -63,10 +54,7 @@ def get_next_category_to_ask(missing_categories: List[str]) -> str:
   priority = [
     "project_type",
     "core_features", 
-    "tech_stack",
-    "user_roles",
-    "business_goals",
-    "non_functional"
+    "business_goals"
   ]
   
   for cat in priority:
@@ -74,3 +62,20 @@ def get_next_category_to_ask(missing_categories: List[str]) -> str:
       return cat
   
   return missing_categories[0]
+
+def is_category_optional(category: str) -> bool:
+  """
+  Check if a category is optional
+    """
+  config = CATEGORY_CONFIG.get(category, {})
+  return not config.get("required", False)
+
+def get_optional_categories() -> List[str]:
+  """
+  Get list of optional categories
+  Assistant Agent can tell user: "All the information is optional, I can determine myself"
+  """
+  return [
+    cat for cat, config in CATEGORY_CONFIG.items()
+    if not config.get("required", False)
+  ]

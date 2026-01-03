@@ -229,16 +229,13 @@ def run_assistant(
     # ========================================================================
     # STEP 2: Check if user is confirming SRS generation
     # ========================================================================
-    if state["should_trigger_srs"]:
-      # Use LLM classification for robust intent detection
-      is_confirmed = classify_confirmation(user_message)
-      logger.log("CLASSIFIER", f"Classification result: {is_confirmed}", level="INFO")
-      
-      if is_confirmed:
+    confirm_keywords = ["yes", "generate", "create", "proceed", "go ahead", "ok", "okay", "sure"]
+    user_lower = user_message.lower()
+    
+    if any(keyword in user_lower for keyword in confirm_keywords):
+      if state["should_trigger_srs"]:
         logger.log("USER_CONFIRMATION", "User confirmed SRS generation", level="INFO")
         state["user_confirmed_generation"] = True
-      else:
-        logger.log("USER_CONFIRMATION", "User did NOT confirm generation", level="INFO")
     
     # ========================================================================
     # STEP 3: Create and run graph

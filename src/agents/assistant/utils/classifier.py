@@ -13,7 +13,7 @@ def classify_confirmation(user_message: str) -> bool:
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": CLASSIFICATION_SYSTEM},
                 {"role": "user", "content": prompt}
