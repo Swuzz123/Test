@@ -1,0 +1,58 @@
+from src.utils.tracing import logger
+from src.agents.assistant.state import AssistantState
+from src.agents.assistant.prompts import READY_FOR_SRS_SYSTEM, READY_FOR_SRS_PROMPT
+from src.memory.singleton import get_memory_manager
+
+def ready_node(state: AssistantState) -> AssistantState:
+  """
+  Ready Node: Inform user they can generate SRS
+  """
+  logger.log("NODE_START", "Ready Node - Offering SRS generation", level="AGENT")
+  
+  # Get client from memory manager
+  client = get_memory_manager().get_client()
+
+  # Format requirements summary
+  req_summary = []
+  for cat, items in state["requirements"].items():
+    if items:
+      req_summary.append(f"- {cat.replace('_', ' ').title()}: {', '.join(items[:3])}")
+  
+  req_text = "\n".join(req_summary) if req_summary else "All requirements gathered"
+  
+  # Generate prompt
+  prompt = READY_FOR_SRS_PROMPT.format(
+    completeness_percent=int(state["validation_score"] * 100),
+    requirements_summary=req_text
+  )
+  
+  logger.log("READY_MESSAGE", "Generating ready-for-SRS message", level="INFO")
+  
+  # Generate message
+  try:
+      response = client.chat.completions.create(
+          model="gpt-4o",
+          messages=[
+              {"role": "system", "content": READY_FOR_SRS_SYSTEM},
+              {"role": "user", "content": prompt}
+          ],
+          temperature=0.7
+      )
+      ready_message = response.choices[0].message.content
+  except Exception as e:
+      logger.log("READY_ERROR", f"Error generating message: {e}", level="ERROR")
+      ready_message = "We have gathered enough requirements. Shall we proceed to generate the SRS?"
+
+  # Add to messages
+  state["messages"].append({
+    "role": "assistant",
+    "content": ready_message
+  })
+  
+  # Set flags
+  state["should_trigger_srs"] = True
+  state["current_phase"] = "ready_for_srs"
+  
+  logger.log("NODE_COMPLETE", "Ready Node complete - Awaiting user confirmation", level="SUCCESS")
+  
+  return state

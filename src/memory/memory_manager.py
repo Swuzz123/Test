@@ -43,6 +43,12 @@ class MemoryManager:
         # 3. Initialize Memori & Register Client
         # memori.llm.register(client) modifies the client in-place or returns a wrapper.
         # We pass the session_maker (or session) to conn.
+        
+        # Ensure MEMORI_API_KEY is available in os.environ for Memori to pick it up
+        memori_api_key = os.getenv("MEMORI_API_KEY")
+        if not memori_api_key:
+             print("Warning: MEMORI_API_KEY not found in environment.")
+        
         try:
             self.memori = Memori(conn=self.Session).llm.register(self.client)
         except Exception as e:
@@ -70,3 +76,12 @@ class MemoryManager:
         """
         if hasattr(self.memori, 'augmentation'):
             self.memori.augmentation.wait()
+
+    def set_session(self, session_id: str):
+        """
+        Set the session ID for the current context.
+        """
+        if hasattr(self.memori, 'set_session'):
+            self.memori.set_session(session_id)
+        else:
+            print(f"Warning: Memori instance does not have set_session method. Session {session_id} not set.")
