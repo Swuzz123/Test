@@ -8,9 +8,11 @@ from src.agents.assistant.nodes import (
   intake_node,
   validator_node,
   continue_chat_node,
+
   ready_node,
   trigger_node
 )
+from src.agents.assistant.utils import classify_confirmation
 
 # ============================================================================
 # ROUTING FUNCTIONS
@@ -227,13 +229,16 @@ def run_assistant(
     # ========================================================================
     # STEP 2: Check if user is confirming SRS generation
     # ========================================================================
-    confirm_keywords = ["yes", "generate", "create", "proceed", "go ahead", "ok", "okay", "sure"]
-    user_lower = user_message.lower()
-    
-    if any(keyword in user_lower for keyword in confirm_keywords):
-      if state["should_trigger_srs"]:
+    if state["should_trigger_srs"]:
+      # Use LLM classification for robust intent detection
+      is_confirmed = classify_confirmation(user_message)
+      logger.log("CLASSIFIER", f"Classification result: {is_confirmed}", level="INFO")
+      
+      if is_confirmed:
         logger.log("USER_CONFIRMATION", "User confirmed SRS generation", level="INFO")
         state["user_confirmed_generation"] = True
+      else:
+        logger.log("USER_CONFIRMATION", "User did NOT confirm generation", level="INFO")
     
     # ========================================================================
     # STEP 3: Create and run graph

@@ -2,7 +2,7 @@ import json
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, ToolMessage
 
-from prompts import PLANNER_PROMPT
+from src.agents.srs.prompts import PLANNER_PROMPT
 from src.utils.tracing import logger
 from src.agents.srs.state import SRSState
 from src.tools import tools, tavily_search

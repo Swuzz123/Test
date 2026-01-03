@@ -1,3 +1,12 @@
+import sys
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.agents.assistant.graph import run_assistant
 
 if __name__ == "__main__":

@@ -1,12 +1,8 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-
 from src.utils.tracing import logger
 from src.agents.assistant.state import AssistantState
 from src.agents.assistant.utils import get_next_category_to_ask
-from prompts import CONTINUE_CHAT_SYSTEM, CONTINUE_CHAT_PROMPT
-
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+from src.agents.assistant.prompts import CONTINUE_CHAT_SYSTEM, CONTINUE_CHAT_PROMPT
+from src.memory.singleton import get_memory_manager
 
 def continue_chat_node(state: AssistantState) -> AssistantState:
   """
@@ -14,6 +10,9 @@ def continue_chat_node(state: AssistantState) -> AssistantState:
   """
   logger.log("NODE_START", "Continue Chat Node", level="AGENT")
   
+  # Get client from memory manager
+  client = get_memory_manager().get_client()
+
   # Get missing category
   missing_cat = get_next_category_to_ask(state["missing_categories"])
   
@@ -34,12 +33,20 @@ def continue_chat_node(state: AssistantState) -> AssistantState:
   logger.log("CHAT_GENERATION", f"Generating response for missing: {missing_cat}", level="INFO")
   
   # Generate response
-  response = llm.invoke([
-    SystemMessage(content=CONTINUE_CHAT_SYSTEM),
-    HumanMessage(content=prompt)
-  ])
-  
-  assistant_message = response.content
+  try:
+      response = client.chat.completions.create(
+          model="gpt-4o",
+          messages=[
+              {"role": "system", "content": CONTINUE_CHAT_SYSTEM},
+              {"role": "user", "content": prompt}
+          ],
+          temperature=0.7
+      )
+      assistant_message = response.choices[0].message.content
+  except Exception as e:
+      logger.log("CHAT_ERROR", f"Error generating response: {e}", level="ERROR")
+      assistant_message = "I'm having trouble connecting to my brain right now. Could you repeat that?"
+
   
   # Add to messages
   state["messages"].append({

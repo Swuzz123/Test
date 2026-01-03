@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 
 from src.utils.tracing import logger
 from src.agents.srs.state import SRSState
-from prompts import WORKER_PROMPT_TEMPLATE
+from src.agents.srs.prompts import WORKER_PROMPT_TEMPLATE
 
 # =============================== CONFIGURATION ================================
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)

@@ -1,11 +1,7 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-
 from src.utils.tracing import logger
 from src.agents.assistant.state import AssistantState
-from prompts import READY_FOR_SRS_SYSTEM, READY_FOR_SRS_PROMPT
-
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+from src.agents.assistant.prompts import READY_FOR_SRS_SYSTEM, READY_FOR_SRS_PROMPT
+from src.memory.singleton import get_memory_manager
 
 def ready_node(state: AssistantState) -> AssistantState:
   """
@@ -13,6 +9,9 @@ def ready_node(state: AssistantState) -> AssistantState:
   """
   logger.log("NODE_START", "Ready Node - Offering SRS generation", level="AGENT")
   
+  # Get client from memory manager
+  client = get_memory_manager().get_client()
+
   # Format requirements summary
   req_summary = []
   for cat, items in state["requirements"].items():
@@ -30,13 +29,20 @@ def ready_node(state: AssistantState) -> AssistantState:
   logger.log("READY_MESSAGE", "Generating ready-for-SRS message", level="INFO")
   
   # Generate message
-  response = llm.invoke([
-    SystemMessage(content=READY_FOR_SRS_SYSTEM),
-    HumanMessage(content=prompt)
-  ])
-  
-  ready_message = response.content
-  
+  try:
+      response = client.chat.completions.create(
+          model="gpt-4o",
+          messages=[
+              {"role": "system", "content": READY_FOR_SRS_SYSTEM},
+              {"role": "user", "content": prompt}
+          ],
+          temperature=0.7
+      )
+      ready_message = response.choices[0].message.content
+  except Exception as e:
+      logger.log("READY_ERROR", f"Error generating message: {e}", level="ERROR")
+      ready_message = "We have gathered enough requirements. Shall we proceed to generate the SRS?"
+
   # Add to messages
   state["messages"].append({
     "role": "assistant",

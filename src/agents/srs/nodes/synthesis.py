@@ -3,7 +3,7 @@ import json
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from prompts import SYNTHESIS_PROMPT
+from src.agents.srs.prompts import SYNTHESIS_PROMPT
 from src.utils.tracing import logger
 from src.agents.srs.state import SRSState
 
