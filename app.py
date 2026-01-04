@@ -384,3 +384,4 @@ with col_chat:
             
             # Force rerun to update artifacts panel and clear input state visually if needed
             st.rerun()
+            
