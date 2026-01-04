@@ -176,14 +176,14 @@ def create_assistant_graph():
 # PUBLIC API: Run Assistant
 # ============================================================================
 
-def run_assistant(
+async def run_assistant(
   user_message: str,
   user_id: str,
   session_id: str,
   existing_state: AssistantState = None
 ) -> tuple[str, AssistantState]:
     """
-    Run Assistant Agent and return response
+    Run Assistant Agent and return response (Async)
     
     Args:
       user_message: User's input message
@@ -227,15 +227,17 @@ def run_assistant(
       }
     
     # ========================================================================
-    # STEP 2: Check if user is confirming SRS generation
+    # STEP 2: Check confirmation (smart classification)
     # ========================================================================
-    confirm_keywords = ["yes", "generate", "create", "proceed", "go ahead", "ok", "okay", "sure"]
-    user_lower = user_message.lower()
-    
-    if any(keyword in user_lower for keyword in confirm_keywords):
-      if state["should_trigger_srs"]:
-        logger.log("USER_CONFIRMATION", "User confirmed SRS generation", level="INFO")
-        state["user_confirmed_generation"] = True
+    if state["should_trigger_srs"]:
+        logger.log("CONFIRMATION_CHECK", "Checking for user confirmation...", level="INFO")
+        is_confirmed = classify_confirmation(user_message)
+        
+        if is_confirmed:
+            logger.log("USER_CONFIRMATION", "User confirmed SRS generation (Classifier)", level="INFO")
+            state["user_confirmed_generation"] = True
+        else:
+            logger.log("CONFIRMATION_FALSE", "User did not confirm SRS generation", level="INFO")
     
     # ========================================================================
     # STEP 3: Create and run graph
@@ -245,10 +247,10 @@ def run_assistant(
     
     config = {"configurable": {"thread_id": session_id}}
     
-    logger.log("GRAPH_EXECUTION", "Starting graph execution", level="INFO")
+    logger.log("GRAPH_EXECUTION", "Starting graph execution (Async)", level="INFO")
     
     final_state = None
-    for output in app.stream(state, config):
+    async for output in app.astream(state, config):
       node_name = list(output.keys())[0]
       node_state = output[node_name]
       

@@ -14,7 +14,7 @@ CATEGORY_CONFIG = {
     "description": "Các tính năng chính"
   },
   "business_goals": {
-    "weight": 0.35,
+    "weight": 0.25,
     "min_items": 1,
     "required": True,
     "description": "Mục tiêu kinh doanh / Logic nghiệp vụ"
