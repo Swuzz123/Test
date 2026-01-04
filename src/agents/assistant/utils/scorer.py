@@ -95,7 +95,7 @@ def calculate_completeness(requirements: Dict[str, List[str]]) -> Tuple[float, L
   
   return round(total_score, 2), missing
 
-def is_ready_for_srs(score: float, threshold: float = 0.7) -> bool:
+def is_ready_for_srs(score: float, threshold: float = 0.8) -> bool:
   """Check if score meets threshold"""
   return score >= threshold
 

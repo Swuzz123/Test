@@ -1,8 +1,10 @@
-from src.agents.assistant.state import AssistantState
-from src.agents.srs.graph import create_srs_graph
-from src.agents.srs.state import SRSState
 from src.utils.tracing import logger
+from src.agents.srs.state import SRSState
+from src.agents.srs.graph import create_srs_graph
+from src.agents.assistant.state import AssistantState
+from src.utils.langfuse_tracer import trace_node, LangfuseTracer
 
+@trace_node("triggner_node")
 def trigger_node(state: AssistantState) -> AssistantState:
   """
   Trigger Node: Call SRS Agent and generate document
@@ -12,9 +14,9 @@ def trigger_node(state: AssistantState) -> AssistantState:
   logger.log("NODE_START", "Trigger Node - Calling SRS Agent", level="AGENT")
   logger.log("AGENT_COMMUNICATION", "Assistant → SRS Agent", level="INFO")
   
-  # ========================================================================
+  # ============================================================================
   # STEP 1: Format requirements for SRS Agent
-  # ========================================================================
+  # ============================================================================
   logger.log("FORMAT_INPUT", "Formatting requirements for SRS Agent", level="INFO")
   
   project_description = _format_requirements_for_srs(state["requirements"])
@@ -23,9 +25,9 @@ def trigger_node(state: AssistantState) -> AssistantState:
             f"Formatted input: {project_description[:200]}...",
             level="SUCCESS")
   
-  # ========================================================================
+  # ============================================================================
   # STEP 2: Prepare SRS Agent initial state
-  # ========================================================================
+  # ============================================================================
   srs_initial_state: SRSState = {
     "project_query": project_description,
     "research_results": [],
@@ -36,22 +38,25 @@ def trigger_node(state: AssistantState) -> AssistantState:
     "messages": []
   }
   
+  srs_tracer = LangfuseTracer("SRS Agent Execution")
+  srs_tracer.start(input_data={"project_query": project_description[:200]})
+  
   logger.log("SRS_STATE_INIT", "Initialized SRS Agent state", 
             data={"project_query_length": len(project_description)},
             level="INFO")
   
-  # ========================================================================
+  # ============================================================================
   # STEP 3: Create SRS Agent graph
-  # ========================================================================
+  # ============================================================================
   logger.log("SRS_GRAPH_CREATE", "Creating SRS Agent graph", level="INFO")
   
   srs_app = create_srs_graph()
   
   logger.log("SRS_GRAPH_READY", "SRS Agent graph ready", level="SUCCESS")
   
-  # ========================================================================
+  # ============================================================================
   # STEP 4: Run SRS Agent (Execute graph)
-  # ========================================================================
+  # ============================================================================
   logger.log("SRS_EXECUTION_START", "Executing SRS Agent workflow", level="INFO")
   
   try:
@@ -69,11 +74,17 @@ def trigger_node(state: AssistantState) -> AssistantState:
       
       final_srs_state = node_state
     
-    # ====================================================================
+    # ==========================================================================
     # STEP 5: Extract SRS result
-    # ====================================================================
+    # ==========================================================================
     if final_srs_state and final_srs_state.get("final_srs"):
       srs_document = final_srs_state["final_srs"]
+      
+      srs_tracer.end(output_data={
+        "success": True,
+        "document_length": len(srs_document),
+        "word_count": len(srs_document.split())
+      })
       
       logger.log("SRS_SUCCESS", 
                 f"SRS generated successfully - {len(srs_document)} characters",
@@ -116,12 +127,17 @@ def trigger_node(state: AssistantState) -> AssistantState:
       })
   
   except Exception as e:
-      logger.log("SRS_EXCEPTION", f"Error calling SRS Agent: {str(e)}", level="ERROR")
-      
-      state["messages"].append({
-        "role": "assistant",
-        "content": f"Error generating SRS: {str(e)}"
-      })
+    srs_tracer.end(output_data={
+      "sucess": False,
+      "error": str(e)
+    })
+    
+    logger.log("SRS_EXCEPTION", f"Error calling SRS Agent: {str(e)}", level="ERROR")
+    
+    state["messages"].append({
+      "role": "assistant",
+      "content": f"Error generating SRS: {str(e)}"
+    })
   
   # Update phase
   state["current_phase"] = "complete"
@@ -130,7 +146,6 @@ def trigger_node(state: AssistantState) -> AssistantState:
   logger.log("AGENT_COMMUNICATION", "Assistant ← SRS Agent (complete)", level="INFO")
   
   return state
-
 
 def _format_requirements_for_srs(requirements: dict) -> str:
   """

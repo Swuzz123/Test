@@ -1,7 +1,9 @@
+from src.utils.tracing import logger
+from src.utils.langfuse_tracer import trace_node
 from src.agents.assistant.state import AssistantState
 from src.agents.assistant.utils import calculate_completeness, is_ready_for_srs
-from src.utils.tracing import logger
 
+@trace_node("validator_node")
 def validator_node(state: AssistantState) -> AssistantState:
   """
   Validator Node: Calculate completeness and check 80% rule

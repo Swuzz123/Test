@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage, ToolMessage
 
 from src.utils.tracing import logger
 from agents.srs.state import SRSState
-from src.utils.prompt_manager import (
+from src.agents.srs.prompts import (
   PLANNER_PROMPT, 
   WORKER_PROMPT_TEMPLATE, 
   SYNTHESIS_PROMPT
@@ -90,8 +90,8 @@ def planning_node(state: SRSState) -> SRSState:
       
       result = tavily_search.invoke(tool_call["args"])
       tool_outputs.append(ToolMessage(
-          content=str(result), 
-          tool_call_id=tool_call["id"]
+        content=str(result), 
+        tool_call_id=tool_call["id"]
       ))
     
     final_response = llm.invoke(planning_prompt + [response] + tool_outputs)
