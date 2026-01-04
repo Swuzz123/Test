@@ -1,7 +1,42 @@
 import time
 import json
+import os
 from datetime import datetime
 from typing import Optional, Dict
+from dotenv import load_dotenv
+
+# Load env vars first thing
+load_dotenv()
+
+try:
+    from langfuse import Langfuse
+    # Correct import per cookbook/user instructions
+    from langfuse import observe
+    # Correct import for LangChain integration
+    from langfuse.langchain import CallbackHandler
+    LANGFUSE_AVAILABLE = True
+except ImportError as e:
+    LANGFUSE_AVAILABLE = False
+    print(f"\033[93mWARNING: Langfuse import failed: {e}. Tracing disabled.\033[0m")
+    
+    # Dummy shims
+    class Langfuse:
+        def __init__(self, *args, **kwargs): pass
+    
+    class CallbackHandler:
+        def __init__(self, *args, **kwargs): pass
+
+    def observe(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
+# Initialize Langfuse Client if available
+langfuse = Langfuse() if LANGFUSE_AVAILABLE else None
+
+def get_langfuse_handler():
+    """Get Langfuse Callback Handler for LangChain/LangGraph"""
+    return CallbackHandler()
 
 class AgentLogger:
   """Comprehensive logging and tracing for multi-agent system"""

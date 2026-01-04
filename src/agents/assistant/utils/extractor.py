@@ -1,8 +1,9 @@
 import json
-from src.utils.tracing import logger
+from src.utils.tracing import logger, observe
 from src.agents.assistant.prompts import EXTRACTION_SYSTEM, EXTRACTION_PROMPT
 from src.memory.singleton import get_memory_manager
 
+@observe()
 def extract_requirements(user_message: str, current_requirements: dict) -> dict:
     """
     Extract requirements from user message using OpenAI Client

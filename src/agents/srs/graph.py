@@ -98,7 +98,14 @@ async def generate_srs_langgraph(project_query: str) -> str:
   }
   
   # Run the graph
-  config = {"configurable": {"thread_id": "srs_session_1"}}
+  # Initialize Langfuse Handler
+  from src.utils.tracing import get_langfuse_handler
+  langfuse_handler = get_langfuse_handler()
+
+  config = {
+      "configurable": {"thread_id": "srs_session_1"},
+      "callbacks": [langfuse_handler]
+  }
   
   logger.log("GRAPH_START", "Executing LangGraph workflow", level="INFO")
   

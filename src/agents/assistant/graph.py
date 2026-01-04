@@ -245,7 +245,14 @@ async def run_assistant(
     logger.log("GRAPH_EXECUTION", "Creating Assistant graph", level="INFO")
     app = create_assistant_graph()
     
-    config = {"configurable": {"thread_id": session_id}}
+    # Initialize Langfuse Handler
+    from src.utils.tracing import get_langfuse_handler
+    langfuse_handler = get_langfuse_handler()
+    
+    config = {
+        "configurable": {"thread_id": session_id},
+        "callbacks": [langfuse_handler]
+    }
     
     logger.log("GRAPH_EXECUTION", "Starting graph execution (Async)", level="INFO")
     

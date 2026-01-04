@@ -1,9 +1,16 @@
 import os
-from openai import OpenAI
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from memori import Memori
+
+try:
+    from langfuse.openai import OpenAI as LangfuseOpenAI
+    USE_LANGFUSE_OPENAI = True
+except ImportError:
+    from openai import OpenAI
+    USE_LANGFUSE_OPENAI = False
 
 load_dotenv()
 
@@ -31,7 +38,11 @@ class MemoryManager:
         print(f"Connecting to Database: {self.db_url}")
 
         # 1. Setup OpenAI Client
-        self.client = OpenAI(api_key=self.api_key)
+        if USE_LANGFUSE_OPENAI:
+            print("Initializing Langfuse-wrapped OpenAI client for usage tracking.")
+            self.client = LangfuseOpenAI(api_key=self.api_key)
+        else:
+            self.client = OpenAI(api_key=self.api_key)
 
         # 2. Setup Database Connection
         try:

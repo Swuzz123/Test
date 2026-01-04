@@ -1,8 +1,9 @@
 from src.tools import tavily_search
-from src.utils.tracing import logger
+from src.utils.tracing import logger, observe
 from src.agents.srs.state import SRSState
 
 # ================================ RESERCH NODE ================================
+@observe()
 def research_node(state: SRSState) -> SRSState:
   """
   Node 1: Research phase - gather information before planning

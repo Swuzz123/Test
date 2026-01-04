@@ -1,22 +1,19 @@
 import os
 import json
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
-
 from src.agents.srs.prompts import SYNTHESIS_PROMPT
-from src.utils.tracing import logger
+from src.utils.tracing import logger, observe
 from src.agents.srs.state import SRSState
-
-# =============================== CONFIGURATION ================================
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+from src.memory.singleton import get_memory_manager
 
 # =============================== SYNTHESIZE NODE ==============================
+@observe()
 def synthesis_node(state: SRSState) -> SRSState:
   """
   Node 4: Synthesis - create final SRS document
   """
   logger.log("NODE_START", "Synthesis Node", level="AGENT")
   
+  client = get_memory_manager().get_client()
   project_query = state["project_query"]
   worker_outputs = state["worker_outputs"]
   
@@ -28,8 +25,18 @@ def synthesis_node(state: SRSState) -> SRSState:
     worker_outputs=worker_outputs_format
   )
   
-  response = llm.invoke([HumanMessage(content=synthesis_prompt)])
-  final_srs = response.content
+  messages = [
+      {"role": "system", "content": "You are a Lead Technical Architect & Documentation Specialist."},
+      {"role": "user", "content": synthesis_prompt}
+  ]
+  
+  response = client.chat.completions.create(
+      model="gpt-4o-mini",
+      messages=messages,
+      temperature=0.7
+  )
+  
+  final_srs = response.choices[0].message.content
   
   logger.log("NODE_COMPLETE", "Synthesis Node - SRS generated", 
             data={"doc_length": len(final_srs)}, level="SUCCESS")
