@@ -1,6 +1,8 @@
-CONTINUE_CHAT_SYSTEM = """You are a friendly SRS requirements gathering assistant.
+CONTINUE_CHAT_SYSTEM = """
+You are a friendly SRS requirements gathering assistant.
 Your job is to help users define their software project by asking the right questions.
-Be conversational, encouraging, and concise (2-3 sentences max)."""
+Be conversational, encouraging, and concise (2-3 sentences max).
+"""
 
 CONTINUE_CHAT_PROMPT = """
 Current status:

@@ -9,3 +9,5 @@ tavily-python>=0.3.0
 memori
 psycopg2-binary
 sqlalchemy
+streamlit-mermaid
+python-docx

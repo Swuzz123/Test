@@ -85,3 +85,27 @@ class MemoryManager:
             self.memori.set_session(session_id)
         else:
             print(f"Warning: Memori instance does not have set_session method. Session {session_id} not set.")
+
+    def reset_session(self, session_id: str):
+        """
+        Hard reset: Re-initialize the Memori instance with a new session.
+        This ensures no state leakage from previous sessions.
+        """
+        print(f"resetting session to: {session_id}")
+        
+        # 1. Re-create OpenAI Client (CRITICAL: Memori patches the client, so we need a fresh one)
+        self.client = OpenAI(api_key=self.api_key)
+
+        # 2. Re-register Client (creates new Memori instance)
+        try:
+            # We create a new instance to clear internal state
+            self.memori = Memori(conn=self.Session).llm.register(self.client)
+        except Exception as e:
+            raise RuntimeError(f"Failed to re-initialize Memori during reset: {e}")
+            
+        # 3. Set the new session
+        self.set_session(session_id)
+        
+        # 4. Re-build Storage Schema if needed
+        if hasattr(self.memori, 'config') and hasattr(self.memori.config, 'storage'):
+            self.memori.config.storage.build()

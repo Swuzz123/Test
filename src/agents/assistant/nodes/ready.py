@@ -1,7 +1,8 @@
 from src.utils.tracing import logger
-from src.agents.assistant.state import AssistantState
-from src.agents.assistant.prompts import READY_FOR_SRS_SYSTEM, READY_FOR_SRS_PROMPT
 from src.memory.singleton import get_memory_manager
+from src.agents.assistant.state import AssistantState
+from src.agents.assistant.utils import _detect_user_language
+from src.agents.assistant.prompts import READY_FOR_SRS_SYSTEM, READY_FOR_SRS_PROMPT
 
 def ready_node(state: AssistantState) -> AssistantState:
   """
@@ -11,7 +12,11 @@ def ready_node(state: AssistantState) -> AssistantState:
   
   # Get client from memory manager
   client = get_memory_manager().get_client()
-
+  
+  # Detect user language
+  user_language = _detect_user_language(state["messages"])
+  logger.log("LANGUAGE_DETECT", f"Detected language: {user_language}", level="INFO")
+    
   # Format requirements summary
   req_summary = []
   for cat, items in state["requirements"].items():
@@ -29,19 +34,25 @@ def ready_node(state: AssistantState) -> AssistantState:
   logger.log("READY_MESSAGE", "Generating ready-for-SRS message", level="INFO")
   
   # Generate message
+  system_prompt = READY_FOR_SRS_SYSTEM + f"""
+      CRITICAL: 
+    - User is speaking in {user_language}
+    - YOU MUST respond in {user_language}
+    - Be enthusiastic and clear
+  """
   try:
-      response = client.chat.completions.create(
-          model="gpt-4o",
-          messages=[
-              {"role": "system", "content": READY_FOR_SRS_SYSTEM},
-              {"role": "user", "content": prompt}
-          ],
-          temperature=0.7
-      )
-      ready_message = response.choices[0].message.content
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+          {"role": "system", "content": system_prompt},
+          {"role": "user", "content": prompt}
+        ],
+        temperature=0.7
+    )
+    ready_message = response.choices[0].message.content
   except Exception as e:
-      logger.log("READY_ERROR", f"Error generating message: {e}", level="ERROR")
-      ready_message = "We have gathered enough requirements. Shall we proceed to generate the SRS?"
+    logger.log("READY_ERROR", f"Error generating message: {e}", level="ERROR")
+    ready_message = "We have gathered enough requirements. Shall we proceed to generate the SRS?"
 
   # Add to messages
   state["messages"].append({

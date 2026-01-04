@@ -8,7 +8,11 @@ import nest_asyncio
 # Apply nest_asyncio to allow nested event loops (crucial for Streamlit + LangGraph/Asyncio)
 nest_asyncio.apply()
 
-from src.agents.assistant.graph import create_assistant_graph
+from src.agents.assistant.graph import create_assistant_graph, run_assistant
+from src.utils.exporter import convert_to_docx
+from datetime import datetime
+import os
+import glob
 
 # Configure Page
 st.set_page_config(layout="wide", page_title="AI Architect & SRS Agent")
@@ -41,6 +45,10 @@ if "conversation_id" not in st.session_state:
 if "assistant_state" not in st.session_state:
     st.session_state.assistant_state = None
 
+# Ensure version directory exists
+SRS_DIR = "srs_version"
+os.makedirs(SRS_DIR, exist_ok=True)
+
 # Initialize Memory
 from src.memory.singleton import get_memory_manager
 try:
@@ -60,13 +68,44 @@ with st.sidebar:
     st.write(f"**User:** `{st.session_state.user_id}`")
     st.write(f"**Session:** `{st.session_state.conversation_id}`")
     
-    st.divider()
-    if st.button("New Session"):
-        st.session_state.conversation_id = f"conv-{uuid.uuid4().hex[:8]}"
-        st.session_state.messages = []
-        st.session_state.srs_content = "### SRS Artifact\n\nNo SRS generated yet."
-        st.session_state.assistant_state = None
-        st.rerun()
+   
+
+
+    # --- VERSION HISTORY (File-based) ---
+    st.markdown("### 📜 Version History")
+    
+    # List files
+    srs_files = glob.glob(os.path.join(SRS_DIR, "SRS_version_*.md"))
+    # Sort files naturally (by version number in filename usually works if we extract logic, but simplified sort first)
+    # Better to sort by modification time or extract the number
+    def get_version_num(filepath):
+        try:
+            name = os.path.basename(filepath) # SRS_version_1.md
+            num = name.replace("SRS_version_", "").replace(".md", "")
+            return int(num)
+        except:
+            return 0
+
+    srs_files.sort(key=get_version_num, reverse=True)
+    
+    if srs_files:
+        selected_file = st.selectbox(
+            "Select Version",
+            options=srs_files,
+            format_func=lambda x: os.path.basename(x)
+        )
+        
+        if st.button("Load Version"):
+            try:
+                with open(selected_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                st.session_state.srs_content = content
+                st.toast(f"Loaded {os.path.basename(selected_file)}")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error loading file: {e}")
+    else:
+        st.info("No saved versions yet.")
 
 # Layout: Artifact (Left) - Chat (Right)
 col_artifact, col_chat = st.columns([7, 3], gap="medium")
@@ -199,35 +238,27 @@ with st.sidebar:
     # New Project Button
     if st.button("＋ New Project", use_container_width=True, type="primary"):
         # Reset Session
-        st.session_state.conversation_id = str(uuid.uuid4())
+        new_id = f"conv-{uuid.uuid4().hex[:8]}"
+        st.session_state.conversation_id = new_id
         st.session_state.messages = []
         st.session_state.srs_content = "### SRS Artifact\n\nNo SRS generated yet."
         st.session_state.assistant_state = None
         
-        # Update memory manager session
+        # Update memory manager session (Hard Reset)
         try:
             mm = get_memory_manager()
-            mm.set_session(st.session_state.conversation_id)
+            mm.reset_session(new_id)
+            # Re-set user context just in case
+            mm.set_context(user_id=st.session_state.user_id, process_id="assistant-agent")
         except Exception as e:
-            st.error(f"Memory update failed: {e}")
+            st.error(f"Memory reset failed: {e}")
             
         st.rerun()
         
     st.markdown("### 🗂️ Active Session")
     st.info(f"**ID:** `{st.session_state.conversation_id[:8]}...`")
     
-    st.markdown("### 🕒 Recent History")
-    # Placeholder for history (mockup for UI/UX)
-    st.markdown("""
-    - Project Alpha
-    - E-Commerce Req
-    - Student Mgmt
-    """, help="History feature coming soon")
-    
-    st.markdown("---")
-    with st.expander("⚙️ Settings"):
-        st.checkbox("Auto-Save", value=True)
-        st.checkbox("Dark Mode", value=False)
+   
 
 # --- MAIN HEADER ---
 # Reduced bottom margin
@@ -272,6 +303,41 @@ with col_artifact:
                 # Render regular markdown
                 if part.strip():
                     st.markdown(part)
+                    
+    # --- ARTIFACT TOOLBAR (Bottom) ---
+    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+    col_save, col_export = st.columns(2)
+    
+    with col_save:
+        if st.button("💾 Save Snapshot", use_container_width=True):
+            # Calculate next version
+            existing_files = glob.glob(os.path.join(SRS_DIR, "SRS_version_*.md"))
+            next_version = len(existing_files) + 1
+            # Check collisions just in case (simple loop)
+            while os.path.exists(os.path.join(SRS_DIR, f"SRS_version_{next_version}.md")):
+                next_version += 1
+            
+            filename = f"SRS_version_{next_version}.md"
+            filepath = os.path.join(SRS_DIR, filename)
+            
+            try:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(st.session_state.srs_content)
+                st.success(f"Saved: {filename}")
+            except Exception as e:
+                st.error(f"Save failed: {e}")
+            
+    with col_export:
+        # Convert MD to DOCX
+        docx_file = convert_to_docx(st.session_state.srs_content)
+        
+        st.download_button(
+            label="📥 Export DOCX",
+            data=docx_file,
+            file_name=f"SRS_Export_{datetime.now().strftime('%Y%m%d_%H%M')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True
+        )
 
 # --- RIGHT PANEL: CHAT ASSISTANT ---
 with col_chat:
@@ -340,36 +406,17 @@ with col_chat:
             # 2. Run Graph
             with messages_container.chat_message("assistant", avatar="🤖"):
                 with st.spinner("Thinking..."):
-                    # Prepare inputs using existing state if available
-                    if st.session_state.assistant_state:
-                        # Use existing state but update current message
-                        inputs = st.session_state.assistant_state
-                        inputs["current_message"] = user_input
-                        # Ensure these are not None if they were
-                        if "messages" not in inputs: inputs["messages"] = st.session_state.messages
-                    else:
-                        # Initialize fresh state
-                        inputs = {
-                            "messages": st.session_state.messages,
-                            "user_id": st.session_state.user_id,
-                            "session_id": st.session_state.conversation_id,
-                            "current_message": user_input,
-                            "requirements": {},
-                            "validation_score": 0.0,
-                            "missing_categories": [],
-                            "is_ready_for_srs": False,
-                            "should_trigger_srs": False,
-                            "user_confirmed_generation": False,
-                            "relevant_history": [],
-                            "user_preferences": []
-                        }
-                    
-                    async def run_chat():
-                        # Use session_id as thread_id for checkpointer
-                        config = {"configurable": {"thread_id": st.session_state.conversation_id}}
-                        return await st.session_state.graph.ainvoke(inputs, config)
-                    
-                    final_state = asyncio.run(run_chat())
+                    # Run Assistant via Wrapper (Handles confirmation logic & state management)
+                    try:
+                        response_text, final_state = asyncio.run(run_assistant(
+                            user_message=user_input,
+                            user_id=st.session_state.user_id,
+                            session_id=st.session_state.conversation_id,
+                            existing_state=st.session_state.assistant_state
+                        ))
+                    except Exception as e:
+                        st.error(f"Error running assistant: {e}")
+                        final_state = st.session_state.assistant_state # Fallback
                     
                     # 3. Update State & UI
                     st.session_state.assistant_state = final_state
