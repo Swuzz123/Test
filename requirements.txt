@@ -2,7 +2,14 @@ openai==1.57.0
 langchain>=0.3.0
 langchain-openai>=0.2.6
 langgraph>=0.2.0
+langfuse==2.57.0
 python-dotenv
 pydantic>=2.0.0
 httpx>=0.24.0
 tavily-python>=0.3.0
+memori
+psycopg2-binary
+sqlalchemy
+streamlit-mermaid
+python-docx
+nest_asyncio

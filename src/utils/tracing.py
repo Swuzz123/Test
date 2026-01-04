@@ -3,9 +3,6 @@ import json
 from datetime import datetime
 from typing import Optional, Dict
 
-# ============================================================================
-# LOGGING & TRACING SYSTEM
-# ============================================================================
 class AgentLogger:
   """Comprehensive logging and tracing for multi-agent system"""
   
@@ -56,9 +53,9 @@ class AgentLogger:
   
   def end_phase(self, phase_name: str):
     if phase_name in self.phase_times:
-        duration = time.time() - self.phase_times[phase_name]
-        self.log("PHASE_END", f"Completed phase: {phase_name}", 
-                  data={"duration_seconds": round(duration, 2)}, level="SUCCESS")
+      duration = time.time() - self.phase_times[phase_name]
+      self.log("PHASE_END", f"Completed phase: {phase_name}", 
+                data={"duration_seconds": round(duration, 2)}, level="SUCCESS")
   
   def export_trace(self, filename: str = "srs_trace.json"):
     """Export full trace log to JSON file"""
