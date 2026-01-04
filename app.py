@@ -1,9 +1,9 @@
-import streamlit as st
-import asyncio
 import re
-from streamlit_mermaid import st_mermaid
 import uuid
+import asyncio
 import nest_asyncio
+import streamlit as st
+from streamlit_mermaid import st_mermaid
 
 # Apply nest_asyncio to allow nested event loops (crucial for Streamlit + LangGraph/Asyncio)
 nest_asyncio.apply()

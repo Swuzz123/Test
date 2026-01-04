@@ -1,9 +1,11 @@
 from src.utils.tracing import logger
+from src.utils.langfuse_tracer import trace_node
 from src.memory.singleton import get_memory_manager
 from src.agents.assistant.state import AssistantState
 from src.agents.assistant.prompts import CONTINUE_CHAT_SYSTEM, CONTINUE_CHAT_PROMPT
 from src.agents.assistant.utils import get_next_category_to_ask, get_optional_categories, _detect_user_language
 
+@trace_node("continue_chat_node")
 def continue_chat_node(state: AssistantState) -> AssistantState:
   """
   Continue Chat Node: Ask user for more information

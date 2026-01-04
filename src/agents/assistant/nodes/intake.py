@@ -1,7 +1,9 @@
 from src.utils.tracing import logger
+from src.utils.langfuse_tracer import trace_node
 from src.agents.assistant.state import AssistantState
 from src.agents.assistant.utils import extract_requirements, merge_requirements
 
+@trace_node("intake_node")
 def intake_node(state: AssistantState) -> AssistantState:
   """
   Intake Node: Receive message and extract requirements
