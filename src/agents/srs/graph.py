@@ -4,6 +4,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from .state import SRSState
 from src.utils.tracing import logger
 from .nodes import research_node, planning_node, worker_node, synthesis_node
+from src.utils.tracing import get_langfuse_handler
 
 def should_continue(state: SRSState) -> str:
   phase = state.get("current_phase", "")
@@ -99,7 +100,7 @@ async def generate_srs_langgraph(project_query: str) -> str:
   
   # Run the graph
   # Initialize Langfuse Handler
-  from src.utils.tracing import get_langfuse_handler
+
   langfuse_handler = get_langfuse_handler()
 
   config = {

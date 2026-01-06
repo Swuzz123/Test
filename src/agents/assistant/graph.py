@@ -13,6 +13,7 @@ from src.agents.assistant.nodes import (
   trigger_node
 )
 from src.agents.assistant.utils import classify_confirmation
+from src.utils.tracing import get_langfuse_handler
 
 # ============================================================================
 # ROUTING FUNCTIONS
@@ -246,7 +247,6 @@ async def run_assistant(
     app = create_assistant_graph()
     
     # Initialize Langfuse Handler
-    from src.utils.tracing import get_langfuse_handler
     langfuse_handler = get_langfuse_handler()
     
     config = {
